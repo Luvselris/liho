@@ -41,6 +41,82 @@
       position: relative;
     }
 
+    /* Pop-up แตะเพื่อเข้าเว็บและเปิดเพลงทันที */
+    .enter-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(255, 240, 243, 0.96);
+      backdrop-filter: blur(10px);
+      z-index: 99999;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      transition: opacity 0.4s ease, visibility 0.4s ease;
+      cursor: pointer;
+    }
+
+    .enter-overlay.hidden {
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+    }
+
+    .enter-box {
+      background: #ffffff;
+      padding: 32px 28px;
+      border-radius: 30px;
+      border: 2px solid var(--border-pink);
+      box-shadow: 0 12px 35px rgba(251, 111, 146, 0.25);
+      text-align: center;
+      max-width: 320px;
+      width: 85%;
+      animation: popIntro 0.4s ease;
+    }
+
+    @keyframes popIntro {
+      from { transform: scale(0.85); opacity: 0; }
+      to { transform: scale(1); opacity: 1; }
+    }
+
+    .enter-icon {
+      font-size: 38px;
+      margin-bottom: 12px;
+      animation: bounceHeart 1.5s infinite;
+    }
+
+    @keyframes bounceHeart {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.15); }
+    }
+
+    .enter-title {
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--deep-pink);
+      margin-bottom: 8px;
+    }
+
+    .enter-sub {
+      font-size: 13px;
+      color: var(--text-muted);
+      margin-bottom: 20px;
+      line-height: 1.5;
+    }
+
+    .enter-btn {
+      width: 100%;
+      background: linear-gradient(135deg, #ffc2d1, var(--deep-pink));
+      color: #ffffff;
+      border: none;
+      padding: 12px;
+      border-radius: 20px;
+      font-size: 14.5px;
+      font-weight: 600;
+      cursor: pointer;
+      box-shadow: 0 6px 18px rgba(251, 111, 146, 0.35);
+    }
+
     /* Floating Music Control Button */
     .music-btn {
       position: fixed;
@@ -61,10 +137,6 @@
       color: var(--deep-pink);
       backdrop-filter: blur(8px);
       transition: all 0.2s ease;
-    }
-
-    .music-btn:active {
-      transform: scale(0.95);
     }
 
     .music-btn.playing {
@@ -484,7 +556,17 @@
 </head>
 <body>
 
-  <!-- Floating Music Toggle Button -->
+  <!-- จังหวะแตะครั้งแรกเพื่อเริ่มเพลงทันที 100% -->
+  <div class="enter-overlay" id="enterOverlay" onclick="enterSiteAndPlay()">
+    <div class="enter-box">
+      <div class="enter-icon">💌</div>
+      <div class="enter-title">welcome to liho ♡</div>
+      <div class="enter-sub">ยินดีต้อนรับเข้าสู่ร้าน liho<br>แตะเพื่อเริ่มฟังเพลงและเข้าชมร้านค้าค่ะ</div>
+      <button type="button" class="enter-btn">เข้าสู่เว็บไซต์ ✨</button>
+    </div>
+  </div>
+
+  <!-- ปุ่มเปิด-ปิดเพลงลอย -->
   <button type="button" class="music-btn" id="musicControlBtn" onclick="toggleAudio()">
     <span id="musicIcon">🎵</span>
     <span id="musicText">Music On</span>
@@ -523,7 +605,7 @@
           <button type="button" class="star-btn active" onclick="setStars(2)">⭐️</button>
           <button type="button" class="star-btn active" onclick="setStars(3)">⭐️</button>
           <button type="button" class="star-btn active" onclick="setStars(4)">⭐️</button>
-          <button type="button" class="star-btn active" onclick="setStars(5)">⭐️️</button>
+          <button type="button" class="star-btn active" onclick="setStars(5)">⭐️</button>
         </div>
 
         <div class="form-group">
@@ -562,9 +644,9 @@
   </div>
 
   <script>
-    // 1. ระบบเพลง Audio Engine (บังคับเล่น + แก้ปัญหากดไม่ติดบน iOS/Android)
+    // 1. ระบบเครื่องเล่นเสียง (ดึงเพลงจาก ./bgm.mp3 ที่อัปโหลดไว้)
     const audioObj = new Audio();
-    audioObj.src = "https://files.catbox.moe/ml26to.mp3";
+    audioObj.src = "./bgm.mp3";
     audioObj.loop = true;
     audioObj.preload = "auto";
 
@@ -585,6 +667,16 @@
       }
     }
 
+    function enterSiteAndPlay() {
+      document.getElementById('enterOverlay').classList.add('hidden');
+      audioObj.play().then(() => {
+        isAudioPlaying = true;
+        updateAudioUI(true);
+      }).catch(err => {
+        console.log("Play failed:", err);
+      });
+    }
+
     function toggleAudio() {
       if (audioObj.paused) {
         audioObj.play().then(() => {
@@ -598,28 +690,7 @@
       }
     }
 
-    function autoStartAudio() {
-      if (isAudioPlaying) return;
-      audioObj.play().then(() => {
-        isAudioPlaying = true;
-        updateAudioUI(true);
-        // ถอน listener ออกเมื่อเล่นสำเร็จ
-        ['touchstart', 'touchend', 'click', 'scroll'].forEach(evt => {
-          document.removeEventListener(evt, autoStartAudio);
-          window.removeEventListener(evt, autoStartAudio);
-        });
-      }).catch(() => {
-        // รอสัมผัสหน้าจอ
-      });
-    }
-
-    window.addEventListener('load', autoStartAudio);
-    ['touchstart', 'touchend', 'click', 'scroll'].forEach(evt => {
-      document.addEventListener(evt, autoStartAudio, { passive: true });
-      window.addEventListener(evt, autoStartAudio, { passive: true });
-    });
-
-    // 2. Firebase Database Setup (แยกใช้ liho_site และ liho_reviews เด็ดขาด)
+    // 2. Firebase Database Setup (แยก liho_site และ liho_reviews เด็ดขาด)
     const firebaseConfig = {
       apiKey: "AIzaSyCpAGDSy1NRgmLV_g7qJrCpwOhU9MrfQyY",
       authDomain: "benefitie.firebaseapp.com",
@@ -761,10 +832,11 @@
       if (data.storeName) document.getElementById('mainStoreName').textContent = data.storeName;
       if (data.storeBio) document.getElementById('mainStoreBio').textContent = data.storeBio;
 
-      // ถ้าในแอดมินเปลี่ยนลิงก์เพลงใหม่ ให้เปลี่ยนตาม
-      if (data.musicUrl && audioObj.src !== data.musicUrl) {
-        audioObj.src = data.musicUrl;
-        if (isAudioPlaying) audioObj.play().catch(() => {});
+      if (data.musicUrl && data.musicUrl.trim() !== '') {
+        if (!audioObj.src.endsWith(data.musicUrl)) {
+          audioObj.src = data.musicUrl;
+          if (isAudioPlaying) audioObj.play().catch(() => {});
+        }
       }
 
       if (data.highlights && Array.isArray(data.highlights)) {
@@ -778,7 +850,6 @@
       if (cached) applySiteData(JSON.parse(cached));
     } catch (e) {}
 
-    // ชี้เฉพาะ liho_site เท่านั้น
     db.collection("liho_site").doc("highlight_content").onSnapshot(doc => {
       if (doc.exists) {
         const live = doc.data();
@@ -789,7 +860,7 @@
       }
     });
 
-    // 3. Reviews System (liho_reviews)
+    // 3. Reviews System
     let currentRating = 5;
     function setStars(star) {
       currentRating = star;
