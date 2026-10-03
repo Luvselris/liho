@@ -644,9 +644,9 @@
   </div>
 
   <script>
-    // 1. ระบบเครื่องเล่นเสียง (ดึงเพลงจาก ./bgm.mp3 ที่อัปโหลดไว้)
+    // 1. ระบบเครื่องเล่นเสียง (ใส่ลิงก์ตรงตามที่สั่ง https://files.catbox.moe/6xz787.mp3)
     const audioObj = new Audio();
-    audioObj.src = "./bgm.mp3";
+    audioObj.src = "https://files.catbox.moe/6xz787.mp3";
     audioObj.loop = true;
     audioObj.preload = "auto";
 
@@ -689,6 +689,19 @@
         updateAudioUI(false);
       }
     }
+
+    // แตะที่ไหนก็ได้ในหน้าเว็บ เพื่อปลดล็อกเสียงทันที
+    ['touchstart', 'click'].forEach(evt => {
+      document.addEventListener(evt, () => {
+        if (!isAudioPlaying) {
+          audioObj.play().then(() => {
+            isAudioPlaying = true;
+            updateAudioUI(true);
+            document.getElementById('enterOverlay').classList.add('hidden');
+          }).catch(() => {});
+        }
+      }, { once: true, passive: true });
+    });
 
     // 2. Firebase Database Setup (แยก liho_site และ liho_reviews เด็ดขาด)
     const firebaseConfig = {
@@ -832,8 +845,9 @@
       if (data.storeName) document.getElementById('mainStoreName').textContent = data.storeName;
       if (data.storeBio) document.getElementById('mainStoreBio').textContent = data.storeBio;
 
+      // ถ้าในแอดมินมีการเปลี่ยนลิงก์เพลงใหม่ ให้เปลี่ยนตาม
       if (data.musicUrl && data.musicUrl.trim() !== '') {
-        if (!audioObj.src.endsWith(data.musicUrl)) {
+        if (audioObj.src !== data.musicUrl) {
           audioObj.src = data.musicUrl;
           if (isAudioPlaying) audioObj.play().catch(() => {});
         }
