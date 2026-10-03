@@ -41,6 +41,43 @@
       position: relative;
     }
 
+    /* Floating Music Control Button */
+    .music-btn {
+      position: fixed;
+      top: 18px;
+      right: 18px;
+      z-index: 999;
+      background: rgba(255, 255, 255, 0.92);
+      border: 1.5px solid var(--border-pink);
+      border-radius: 50px;
+      padding: 7px 14px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      box-shadow: 0 4px 15px rgba(251, 111, 146, 0.25);
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--deep-pink);
+      backdrop-filter: blur(8px);
+      transition: all 0.2s ease;
+    }
+
+    .music-btn:active {
+      transform: scale(0.95);
+    }
+
+    .music-btn.playing {
+      animation: pulseBtn 1.8s infinite;
+    }
+
+    @keyframes pulseBtn {
+      0% { box-shadow: 0 0 0 0 rgba(251, 111, 146, 0.4); }
+      70% { box-shadow: 0 0 0 10px rgba(251, 111, 146, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(251, 111, 146, 0); }
+    }
+
+    /* Floating Emojis */
     .floating-container {
       position: fixed;
       top: 0;
@@ -447,9 +484,13 @@
 </head>
 <body>
 
-  <div class="floating-container" id="emojiContainer"></div>
+  <!-- Floating Music Toggle Button -->
+  <button type="button" class="music-btn" id="musicControlBtn" onclick="toggleAudio()">
+    <span id="musicIcon">🎵</span>
+    <span id="musicText">Music On</span>
+  </button>
 
-  <audio id="bgMusic" loop autoplay preload="auto" playsinline src="https://files.catbox.moe/ml26to.mp3"></audio>
+  <div class="floating-container" id="emojiContainer"></div>
 
   <div class="container">
     
@@ -482,7 +523,7 @@
           <button type="button" class="star-btn active" onclick="setStars(2)">⭐️</button>
           <button type="button" class="star-btn active" onclick="setStars(3)">⭐️</button>
           <button type="button" class="star-btn active" onclick="setStars(4)">⭐️</button>
-          <button type="button" class="star-btn active" onclick="setStars(5)">⭐️</button>
+          <button type="button" class="star-btn active" onclick="setStars(5)">⭐️️</button>
         </div>
 
         <div class="form-group">
@@ -521,6 +562,64 @@
   </div>
 
   <script>
+    // 1. ระบบเพลง Audio Engine (บังคับเล่น + แก้ปัญหากดไม่ติดบน iOS/Android)
+    const audioObj = new Audio();
+    audioObj.src = "https://files.catbox.moe/ml26to.mp3";
+    audioObj.loop = true;
+    audioObj.preload = "auto";
+
+    let isAudioPlaying = false;
+    const musicBtn = document.getElementById('musicControlBtn');
+    const musicIcon = document.getElementById('musicIcon');
+    const musicText = document.getElementById('musicText');
+
+    function updateAudioUI(playing) {
+      if (playing) {
+        musicBtn.classList.add('playing');
+        musicIcon.textContent = '🔊';
+        musicText.textContent = 'Music On';
+      } else {
+        musicBtn.classList.remove('playing');
+        musicIcon.textContent = '🔈';
+        musicText.textContent = 'Music Off';
+      }
+    }
+
+    function toggleAudio() {
+      if (audioObj.paused) {
+        audioObj.play().then(() => {
+          isAudioPlaying = true;
+          updateAudioUI(true);
+        }).catch(e => console.log(e));
+      } else {
+        audioObj.pause();
+        isAudioPlaying = false;
+        updateAudioUI(false);
+      }
+    }
+
+    function autoStartAudio() {
+      if (isAudioPlaying) return;
+      audioObj.play().then(() => {
+        isAudioPlaying = true;
+        updateAudioUI(true);
+        // ถอน listener ออกเมื่อเล่นสำเร็จ
+        ['touchstart', 'touchend', 'click', 'scroll'].forEach(evt => {
+          document.removeEventListener(evt, autoStartAudio);
+          window.removeEventListener(evt, autoStartAudio);
+        });
+      }).catch(() => {
+        // รอสัมผัสหน้าจอ
+      });
+    }
+
+    window.addEventListener('load', autoStartAudio);
+    ['touchstart', 'touchend', 'click', 'scroll'].forEach(evt => {
+      document.addEventListener(evt, autoStartAudio, { passive: true });
+      window.addEventListener(evt, autoStartAudio, { passive: true });
+    });
+
+    // 2. Firebase Database Setup (แยกใช้ liho_site และ liho_reviews เด็ดขาด)
     const firebaseConfig = {
       apiKey: "AIzaSyCpAGDSy1NRgmLV_g7qJrCpwOhU9MrfQyY",
       authDomain: "benefitie.firebaseapp.com",
@@ -662,7 +761,12 @@
       if (data.storeName) document.getElementById('mainStoreName').textContent = data.storeName;
       if (data.storeBio) document.getElementById('mainStoreBio').textContent = data.storeBio;
 
-      
+      // ถ้าในแอดมินเปลี่ยนลิงก์เพลงใหม่ ให้เปลี่ยนตาม
+      if (data.musicUrl && audioObj.src !== data.musicUrl) {
+        audioObj.src = data.musicUrl;
+        if (isAudioPlaying) audioObj.play().catch(() => {});
+      }
+
       if (data.highlights && Array.isArray(data.highlights)) {
         currentHighlights = data.highlights;
         renderHighlights();
@@ -674,7 +778,7 @@
       if (cached) applySiteData(JSON.parse(cached));
     } catch (e) {}
 
-    // ชี้ไปที่คอลเลกชันเฉพาะของ liho เท่านั้น
+    // ชี้เฉพาะ liho_site เท่านั้น
     db.collection("liho_site").doc("highlight_content").onSnapshot(doc => {
       if (doc.exists) {
         const live = doc.data();
@@ -685,7 +789,7 @@
       }
     });
 
-    // Reviews System
+    // 3. Reviews System (liho_reviews)
     let currentRating = 5;
     function setStars(star) {
       currentRating = star;
@@ -697,7 +801,6 @@
     }
 
     function listenReviews() {
-      // ดึงจากคอลเลกชันรีวิวเฉพาะของ liho
       db.collection("liho_reviews")
         .orderBy("createdAt", "desc")
         .onSnapshot(snapshot => {
@@ -744,7 +847,6 @@
         const now = new Date();
         const dateStr = now.toLocaleDateString('th-TH', { day: 'numeric', month: 'short' });
 
-        // บันทึกลงคอลเลกชันเฉพาะของ liho
         await db.collection("liho_reviews").add({
           name: name,
           stars: currentRating,
@@ -766,20 +868,7 @@
 
     listenReviews();
 
-    const music = document.getElementById('bgMusic');
-function playAudio() {
-  if (music) {
-    music.play().then(() => {
-      ['click', 'touchstart', 'scroll'].forEach(evt => 
-        document.removeEventListener(evt, playAudio)
-      );
-    }).catch(() => {});
-  }
-}
-window.addEventListener('DOMContentLoaded', playAudio);
-['click', 'touchstart', 'scroll'].forEach(evt => 
-  document.addEventListener(evt, playAudio, { passive: true })
-);
+    // Floating Icons
     const floatingIcons = ['🩹', '☁️', '🐰', '🤍', '👼🏻'];
     const emojiBox = document.getElementById('emojiContainer');
     function createEmoji() {
