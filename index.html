@@ -41,115 +41,6 @@
       position: relative;
     }
 
-    /* Pop-up แตะเพื่อเข้าเว็บและเปิดเพลงทันที */
-    .enter-overlay {
-      position: fixed;
-      inset: 0;
-      background: rgba(255, 240, 243, 0.96);
-      backdrop-filter: blur(10px);
-      z-index: 99999;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      transition: opacity 0.4s ease, visibility 0.4s ease;
-      cursor: pointer;
-    }
-
-    .enter-overlay.hidden {
-      opacity: 0;
-      visibility: hidden;
-      pointer-events: none;
-    }
-
-    .enter-box {
-      background: #ffffff;
-      padding: 32px 28px;
-      border-radius: 30px;
-      border: 2px solid var(--border-pink);
-      box-shadow: 0 12px 35px rgba(251, 111, 146, 0.25);
-      text-align: center;
-      max-width: 320px;
-      width: 85%;
-      animation: popIntro 0.4s ease;
-    }
-
-    @keyframes popIntro {
-      from { transform: scale(0.85); opacity: 0; }
-      to { transform: scale(1); opacity: 1; }
-    }
-
-    .enter-icon {
-      font-size: 38px;
-      margin-bottom: 12px;
-      animation: bounceHeart 1.5s infinite;
-    }
-
-    @keyframes bounceHeart {
-      0%, 100% { transform: scale(1); }
-      50% { transform: scale(1.15); }
-    }
-
-    .enter-title {
-      font-size: 20px;
-      font-weight: 700;
-      color: var(--deep-pink);
-      margin-bottom: 8px;
-    }
-
-    .enter-sub {
-      font-size: 13px;
-      color: var(--text-muted);
-      margin-bottom: 20px;
-      line-height: 1.5;
-    }
-
-    .enter-btn {
-      width: 100%;
-      background: linear-gradient(135deg, #ffc2d1, var(--deep-pink));
-      color: #ffffff;
-      border: none;
-      padding: 12px;
-      border-radius: 20px;
-      font-size: 14.5px;
-      font-weight: 600;
-      cursor: pointer;
-      box-shadow: 0 6px 18px rgba(251, 111, 146, 0.35);
-    }
-
-    /* Floating Music Control Button */
-    .music-btn {
-      position: fixed;
-      top: 18px;
-      right: 18px;
-      z-index: 999;
-      background: rgba(255, 255, 255, 0.92);
-      border: 1.5px solid var(--border-pink);
-      border-radius: 50px;
-      padding: 7px 14px;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      box-shadow: 0 4px 15px rgba(251, 111, 146, 0.25);
-      cursor: pointer;
-      font-size: 13px;
-      font-weight: 600;
-      color: var(--deep-pink);
-      backdrop-filter: blur(8px);
-      transition: all 0.2s ease;
-    }
-
-    .music-btn.playing {
-      animation: pulseBtn 1.8s infinite;
-    }
-
-    @keyframes pulseBtn {
-      0% { box-shadow: 0 0 0 0 rgba(251, 111, 146, 0.4); }
-      70% { box-shadow: 0 0 0 10px rgba(251, 111, 146, 0); }
-      100% { box-shadow: 0 0 0 0 rgba(251, 111, 146, 0); }
-    }
-
-    /* Floating Emojis */
     .floating-container {
       position: fixed;
       top: 0;
@@ -556,23 +447,9 @@
 </head>
 <body>
 
-  <!-- จังหวะแตะครั้งแรกเพื่อเริ่มเพลงทันที 100% -->
-  <div class="enter-overlay" id="enterOverlay" onclick="enterSiteAndPlay()">
-    <div class="enter-box">
-      <div class="enter-icon">💌</div>
-      <div class="enter-title">welcome to liho ♡</div>
-      <div class="enter-sub">ยินดีต้อนรับเข้าสู่ร้าน liho<br>แตะเพื่อเริ่มฟังเพลงและเข้าชมร้านค้าค่ะ</div>
-      <button type="button" class="enter-btn">เข้าสู่เว็บไซต์ ✨</button>
-    </div>
-  </div>
-
-  <!-- ปุ่มเปิด-ปิดเพลงลอย -->
-  <button type="button" class="music-btn" id="musicControlBtn" onclick="toggleAudio()">
-    <span id="musicIcon">🎵</span>
-    <span id="musicText">Music On</span>
-  </button>
-
   <div class="floating-container" id="emojiContainer"></div>
+
+  <audio id="bgMusic" loop autoplay preload="auto" playsinline src="https://files.catbox.moe/zy1wnq.mp3"></audio>
 
   <div class="container">
     
@@ -644,66 +521,6 @@
   </div>
 
   <script>
-    // 1. ระบบเครื่องเล่นเสียง (ใส่ลิงก์ตรงตามที่สั่ง https://files.catbox.moe/6xz787.mp3)
-    const audioObj = new Audio();
-    audioObj.src = "https://files.catbox.moe/6xz787.mp3";
-    audioObj.loop = true;
-    audioObj.preload = "auto";
-
-    let isAudioPlaying = false;
-    const musicBtn = document.getElementById('musicControlBtn');
-    const musicIcon = document.getElementById('musicIcon');
-    const musicText = document.getElementById('musicText');
-
-    function updateAudioUI(playing) {
-      if (playing) {
-        musicBtn.classList.add('playing');
-        musicIcon.textContent = '🔊';
-        musicText.textContent = 'Music On';
-      } else {
-        musicBtn.classList.remove('playing');
-        musicIcon.textContent = '🔈';
-        musicText.textContent = 'Music Off';
-      }
-    }
-
-    function enterSiteAndPlay() {
-      document.getElementById('enterOverlay').classList.add('hidden');
-      audioObj.play().then(() => {
-        isAudioPlaying = true;
-        updateAudioUI(true);
-      }).catch(err => {
-        console.log("Play failed:", err);
-      });
-    }
-
-    function toggleAudio() {
-      if (audioObj.paused) {
-        audioObj.play().then(() => {
-          isAudioPlaying = true;
-          updateAudioUI(true);
-        }).catch(e => console.log(e));
-      } else {
-        audioObj.pause();
-        isAudioPlaying = false;
-        updateAudioUI(false);
-      }
-    }
-
-    // แตะที่ไหนก็ได้ในหน้าเว็บ เพื่อปลดล็อกเสียงทันที
-    ['touchstart', 'click'].forEach(evt => {
-      document.addEventListener(evt, () => {
-        if (!isAudioPlaying) {
-          audioObj.play().then(() => {
-            isAudioPlaying = true;
-            updateAudioUI(true);
-            document.getElementById('enterOverlay').classList.add('hidden');
-          }).catch(() => {});
-        }
-      }, { once: true, passive: true });
-    });
-
-    // 2. Firebase Database Setup (แยก liho_site และ liho_reviews เด็ดขาด)
     const firebaseConfig = {
       apiKey: "AIzaSyCpAGDSy1NRgmLV_g7qJrCpwOhU9MrfQyY",
       authDomain: "benefitie.firebaseapp.com",
@@ -845,11 +662,11 @@
       if (data.storeName) document.getElementById('mainStoreName').textContent = data.storeName;
       if (data.storeBio) document.getElementById('mainStoreBio').textContent = data.storeBio;
 
-      // ถ้าในแอดมินมีการเปลี่ยนลิงก์เพลงใหม่ ให้เปลี่ยนตาม
-      if (data.musicUrl && data.musicUrl.trim() !== '') {
-        if (audioObj.src !== data.musicUrl) {
-          audioObj.src = data.musicUrl;
-          if (isAudioPlaying) audioObj.play().catch(() => {});
+      if (data.musicUrl) {
+        const music = document.getElementById('bgMusic');
+        if (music && music.src !== data.musicUrl) {
+          music.src = data.musicUrl;
+          music.play().catch(() => {});
         }
       }
 
@@ -864,6 +681,7 @@
       if (cached) applySiteData(JSON.parse(cached));
     } catch (e) {}
 
+    // ชี้ไปที่คอลเลกชันเฉพาะของ liho เท่านั้น
     db.collection("liho_site").doc("highlight_content").onSnapshot(doc => {
       if (doc.exists) {
         const live = doc.data();
@@ -874,7 +692,7 @@
       }
     });
 
-    // 3. Reviews System
+    // Reviews System
     let currentRating = 5;
     function setStars(star) {
       currentRating = star;
@@ -886,6 +704,7 @@
     }
 
     function listenReviews() {
+      // ดึงจากคอลเลกชันรีวิวเฉพาะของ liho
       db.collection("liho_reviews")
         .orderBy("createdAt", "desc")
         .onSnapshot(snapshot => {
@@ -932,6 +751,7 @@
         const now = new Date();
         const dateStr = now.toLocaleDateString('th-TH', { day: 'numeric', month: 'short' });
 
+        // บันทึกลงคอลเลกชันเฉพาะของ liho
         await db.collection("liho_reviews").add({
           name: name,
           stars: currentRating,
@@ -953,7 +773,18 @@
 
     listenReviews();
 
-    // Floating Icons
+    const music = document.getElementById('bgMusic');
+    function unlockAudio() {
+      if (music.paused) music.play().catch(() => {});
+      document.removeEventListener('touchstart', unlockAudio);
+      document.removeEventListener('click', unlockAudio);
+    }
+    document.addEventListener('touchstart', unlockAudio, { passive: true });
+    document.addEventListener('click', unlockAudio, { passive: true });
+    window.addEventListener('DOMContentLoaded', () => {
+      music.play().catch(() => {});
+    });
+
     const floatingIcons = ['🩹', '☁️', '🐰', '🤍', '👼🏻'];
     const emojiBox = document.getElementById('emojiContainer');
     function createEmoji() {
