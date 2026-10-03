@@ -662,14 +662,7 @@
       if (data.storeName) document.getElementById('mainStoreName').textContent = data.storeName;
       if (data.storeBio) document.getElementById('mainStoreBio').textContent = data.storeBio;
 
-      if (data.musicUrl) {
-        const music = document.getElementById('bgMusic');
-        if (music && music.src !== data.musicUrl) {
-          music.src = data.musicUrl;
-          music.play().catch(() => {});
-        }
-      }
-
+      
       if (data.highlights && Array.isArray(data.highlights)) {
         currentHighlights = data.highlights;
         renderHighlights();
@@ -774,17 +767,19 @@
     listenReviews();
 
     const music = document.getElementById('bgMusic');
-    function unlockAudio() {
-      if (music.paused) music.play().catch(() => {});
-      document.removeEventListener('touchstart', unlockAudio);
-      document.removeEventListener('click', unlockAudio);
-    }
-    document.addEventListener('touchstart', unlockAudio, { passive: true });
-    document.addEventListener('click', unlockAudio, { passive: true });
-    window.addEventListener('DOMContentLoaded', () => {
-      music.play().catch(() => {});
-    });
-
+function playAudio() {
+  if (music) {
+    music.play().then(() => {
+      ['click', 'touchstart', 'scroll'].forEach(evt => 
+        document.removeEventListener(evt, playAudio)
+      );
+    }).catch(() => {});
+  }
+}
+window.addEventListener('DOMContentLoaded', playAudio);
+['click', 'touchstart', 'scroll'].forEach(evt => 
+  document.addEventListener(evt, playAudio, { passive: true })
+);
     const floatingIcons = ['🩹', '☁️', '🐰', '🤍', '👼🏻'];
     const emojiBox = document.getElementById('emojiContainer');
     function createEmoji() {
